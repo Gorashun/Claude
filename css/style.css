@@ -380,7 +380,7 @@ hr.sep {
 .rank-rear   { color: var(--cyan); }
 
 /* ============================================================
-   OVERWORLD MAP
+   OVERWORLD MAP  (Canvas-based)
    ============================================================ */
 #screen-overworld {
   display: flex;
@@ -391,19 +391,18 @@ hr.sep {
 
 #map-container {
   flex: 1;
+  display: flex;
+  align-items: flex-start;
 }
 
-#overworld-map {
-  font-size: 14px;
-  line-height: 1.3;
-  letter-spacing: 2px;
-  white-space: pre;
-  cursor: default;
-  padding: 4px;
-  background: #000;
+#overworld-canvas {
+  display: block;
   border: 1px solid var(--border);
+  box-shadow: 0 0 16px rgba(51,255,51,0.12), 0 0 4px rgba(51,255,51,0.06);
+  image-rendering: pixelated;
 }
 
+/* Keep old span classes for any fallback text */
 .map-tile-grass    { color: #1a5c1a; }
 .map-tile-forest   { color: #005500; }
 .map-tile-mountain { color: #6b6b6b; }
@@ -545,11 +544,33 @@ hr.sep {
 .combat-header {
   color: var(--yellow);
   text-align: center;
-  font-size: 14px;
-  letter-spacing: 3px;
-  padding: 4px;
+  font-size: 15px;
+  letter-spacing: 4px;
+  padding: 5px;
+  border-bottom: 1px solid var(--border);
+  text-shadow: 0 0 10px rgba(255,204,0,0.5);
+}
+
+.combat-header-sword {
+  display: inline-block;
+  animation: swordPulse 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes swordPulse {
+  from { opacity: 0.5; }
+  to   { opacity: 1; text-shadow: 0 0 8px var(--yellow); }
+}
+
+.combat-col-title {
+  font-size: 12px;
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+  padding-bottom: 3px;
   border-bottom: 1px solid var(--border);
 }
+
+.ally-title  { color: var(--cyan); }
+.enemy-title { color: var(--red); }
 
 .combat-field {
   display: grid;
@@ -643,25 +664,24 @@ hr.sep {
 }
 
 /* ============================================================
-   DUNGEON SCREEN
+   DUNGEON SCREEN  (Canvas-based)
    ============================================================ */
 #screen-dungeon {
   padding: 8px;
   display: flex;
   gap: 8px;
   height: 100%;
+  align-items: flex-start;
 }
 
-#dungeon-map {
-  font-size: 16px;
-  line-height: 1.4;
-  letter-spacing: 3px;
-  white-space: pre;
-  background: #000;
+#dungeon-canvas {
+  display: block;
   border: 1px solid var(--border);
-  padding: 4px;
+  box-shadow: 0 0 20px rgba(51,255,51,0.10), 0 0 6px rgba(51,255,51,0.05);
+  image-rendering: pixelated;
 }
 
+/* Keep span classes for fallback */
 .dungeon-tile-wall   { color: #444; }
 .dungeon-tile-floor  { color: #222; }
 .dungeon-tile-door   { color: var(--orange); }
@@ -906,7 +926,7 @@ hr.sep {
 .fade-in { animation: fadeIn 0.3s ease-in; }
 
 /* ============================================================
-   PROGRESS BAR (HP/MP)
+   PROGRESS BAR (HP/MP)  — legacy, kept for town screens
    ============================================================ */
 .progress-bar-wrap {
   background: #111;
@@ -925,3 +945,105 @@ hr.sep {
 .progress-bar-hp.low { background: var(--red); }
 .progress-bar-hp.mid { background: var(--orange); }
 .progress-bar-mp   { background: var(--cyan); }
+
+/* ============================================================
+   NEW HP BAR (Combat)
+   ============================================================ */
+.hp-bar-wrap {
+  background: #111;
+  border: 1px solid #1a2a1a;
+  height: 10px;
+  width: 100%;
+  margin: 2px 0;
+  overflow: hidden;
+}
+
+.hp-bar-fill {
+  height: 100%;
+  transition: width 0.35s ease-out;
+  min-width: 2px;
+}
+
+.hp-bar-fill.bar-full { box-shadow: 0 0 4px rgba(51,255,51,0.4); }
+.hp-bar-fill.bar-mid  { box-shadow: 0 0 4px rgba(255,136,0,0.4); }
+.hp-bar-fill.bar-low  { box-shadow: 0 0 4px rgba(255,51,51,0.5);
+                         animation: barPulse 0.8s ease-in-out infinite alternate; }
+.hp-bar-fill.bar-mp   { box-shadow: 0 0 4px rgba(0,204,255,0.3); }
+
+@keyframes barPulse {
+  from { opacity: 0.8; }
+  to   { opacity: 1; }
+}
+
+/* ============================================================
+   ASCII PORTRAITS (Combat)
+   ============================================================ */
+.portrait {
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  line-height: 1.25;
+  margin: 0;
+  flex-shrink: 0;
+  width: 44px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  background: #000;
+}
+
+.portrait-ally  { color: var(--fg); border-color: var(--fg-dim); }
+.portrait-enemy { color: var(--red); border-color: #330000; }
+
+.combatant-card.active .portrait-ally  { border-color: var(--yellow); }
+.combatant-card.active .portrait-enemy { border-color: var(--yellow); box-shadow: 0 0 6px rgba(255,204,0,0.3); }
+
+/* ============================================================
+   FLOATING DAMAGE NUMBERS
+   ============================================================ */
+@keyframes floatUp {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  60%  { opacity: 1; transform: translateY(-24px) scale(1.1); }
+  100% { opacity: 0; transform: translateY(-44px) scale(0.9); }
+}
+
+.dmg-float {
+  position: absolute;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  font-size: 15px;
+  color: #ff3333;
+  text-shadow: 0 0 6px rgba(255,51,51,0.8);
+  animation: floatUp 0.9s ease-out forwards;
+  pointer-events: none;
+  z-index: 200;
+  white-space: nowrap;
+}
+
+.heal-float {
+  color: #33ff33;
+  text-shadow: 0 0 6px rgba(51,255,51,0.8);
+}
+
+/* ============================================================
+   PANEL & BUTTON GLOW ENHANCEMENTS
+   ============================================================ */
+.panel-title {
+  text-shadow: 0 0 8px rgba(255,204,0,0.3);
+}
+
+.btn:hover, .btn.active {
+  box-shadow: 0 0 6px rgba(51,255,51,0.25);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 0 8px rgba(51,255,51,0.4);
+}
+
+.action-btn:hover {
+  box-shadow: 0 0 8px rgba(51,255,51,0.3);
+}
+
+/* HUD character items get a subtle separator */
+.hud-char + .hud-char {
+  border-left: 1px solid var(--border);
+  padding-left: 12px;
+}

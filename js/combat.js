@@ -38,6 +38,65 @@ const CombatScreen = (function() {
   }
 
   /* ----------------------------------------------------------
+     CLASS PORTRAITS (ASCII art)
+     ---------------------------------------------------------- */
+  const CLASS_PORTRAITS = {
+    fighter: ['  /|\\  ', ' [^_^] ', ' /| |\\ ', '  | |  '],
+    priest:  ['  _+_  ', ' (+_+) ', ' _) (_ ', '  | |  '],
+    wizard:  ['  ***  ', ' (*.*) ', '  | |  ', ' /___\\ '],
+    monk:    ['  ooo  ', ' (o_o) ', ' _|_|_ ', '  | |  '],
+    ranger:  ['  ___  ', ' [-_-] ', ' /|_|\\ ', '  | |  '],
+    thief:   ['  ,,   ', ' (>_<) ', '  |//  ', ' / \\   ']
+  };
+
+  const ENEMY_PORTRAITS = {
+    goblin:   [' ,-, ', '(o o)', ' \\_/ '],
+    orc:      [' -|- ', '(> <)', ' /|\\ '],
+    skeleton: [' ._. ', '(X X)', ' )_( '],
+    zombie:   [' .,. ', '(~.~)', ' |_| '],
+    troll:    ['  M  ', '(o_o)', ' /|\\ '],
+    dragon:   ['/^^^\\', '< @ >', '\\___/'],
+    wolf:     [' /\\ ', '(^.^)', '  U  '],
+    bandit:   [' ___ ', '[-_-]', ' | | '],
+    gnoll:    [' .-. ', '(#.#)', ' ||| '],
+    ogre:     [' [_] ', '(O O)', ' /|\\ '],
+    minotaur: [' ) ( ', '(> <)', ' | | '],
+    nikademus:['*****', '(#X#)', '*****']
+  };
+
+  function getPortrait(id, isEnemy) {
+    const map = isEnemy ? ENEMY_PORTRAITS : CLASS_PORTRAITS;
+    const lines = map[id] || (isEnemy ? ['(???)', ' ??? '] : ['[???]', ' ? ? ']);
+    return `<pre class="portrait ${isEnemy ? 'portrait-enemy' : 'portrait-ally'}">${lines.join('\n')}</pre>`;
+  }
+
+  /* ----------------------------------------------------------
+     HP BAR with gradient
+     ---------------------------------------------------------- */
+  function hpBar(cur, max, type) {
+    const pct = Math.max(0, Math.min(1, cur / max));
+    const pctStr = (pct * 100).toFixed(1);
+    let grad, cls;
+    if (type === 'mp') {
+      grad = 'linear-gradient(90deg, #00ccff, #005580)';
+      cls = 'bar-mp';
+    } else if (pct < 0.25) {
+      grad = 'linear-gradient(90deg, #ff3333, #880000)';
+      cls = 'bar-low';
+    } else if (pct < 0.5) {
+      grad = 'linear-gradient(90deg, #ff8800, #cc5500)';
+      cls = 'bar-mid';
+    } else {
+      grad = 'linear-gradient(90deg, #33ff33, #1a8c1a)';
+      cls = 'bar-full';
+    }
+    return `
+      <div class="hp-bar-wrap">
+        <div class="hp-bar-fill ${cls}" style="width:${pctStr}%;background:${grad}"></div>
+      </div>`;
+  }
+
+  /* ----------------------------------------------------------
      RENDER
      ---------------------------------------------------------- */
   function render(main, data) {
@@ -49,13 +108,15 @@ const CombatScreen = (function() {
     if (!main) main = document.getElementById('main-content');
     const s = Game.getState();
     const alive = Game.getAliveParty();
-
-    // Get active combatant
     const actor = alive[cs.actorIdx];
 
     main.innerHTML = `
       <div id="screen-combat">
-        <div class="combat-header">⚔ COMBAT ⚔</div>
+        <div class="combat-header">
+          <span class="combat-header-sword">⚔</span>
+          COMBAT
+          <span class="combat-header-sword">⚔</span>
+        </div>
         <div class="combat-field">
           ${renderPartyColumn(s)}
           <div class="combat-vs">VS</div>
@@ -65,7 +126,6 @@ const CombatScreen = (function() {
       </div>
     `;
 
-    // Attach button handlers after render
     if (cs.phase === 'select' && actor) {
       attachActionHandlers(actor);
     }
@@ -75,21 +135,35 @@ const CombatScreen = (function() {
     const alive = Game.getAliveParty();
     return `
       <div class="combat-party">
-        <div style="color:var(--cyan);font-size:12px;letter-spacing:2px;margin-bottom:4px">YOUR PARTY</div>
+        <div class="combat-col-title ally-title">YOUR PARTY</div>
         ${s.party.map((ch, i) => {
           const isActor = alive[cs.actorIdx] === ch && cs.phase === 'select';
-          const hpPct = ch.hp.current / ch.hp.max;
-          const hpCls = hpPct < 0.25 ? 'low' : hpPct < 0.5 ? 'mid' : '';
+          const hpPct   = ch.hp.current / ch.hp.max;
+          const hpCls   = hpPct < 0.25 ? 'low' : hpPct < 0.5 ? 'mid' : '';
+          const rankColor = ch.rank === 'front' ? 'var(--red)' : ch.rank === 'rear' ? 'var(--cyan)' : 'var(--orange)';
           return `
-            <div class="combatant-card ${!ch.alive ? 'dead' : ''} ${isActor ? 'active' : ''}">
-              <div class="combatant-name">${ch.name}</div>
-              <div class="combatant-hp ${hpCls}">${ch.alive ? `${ch.hp.current}/${ch.hp.max} HP` : 'DEAD'}</div>
-              <div class="combatant-rank">[${ch.rank.toUpperCase()}] ${DATA.classes.find(c=>c.id===ch.class).name} Lv.${ch.level}</div>
-              ${ch.mp.max > 0 ? `<div style="color:var(--cyan);font-size:11px">${ch.mp.current}/${ch.mp.max} MP</div>` : ''}
-              ${renderStatusEffects(ch)}
-              <div class="progress-bar-wrap" style="margin-top:2px">
-                <div class="progress-bar-fill progress-bar-hp ${hpCls}"
-                     style="width:${Math.max(0, hpPct*100)}%"></div>
+            <div class="combatant-card ${!ch.alive ? 'dead' : ''} ${isActor ? 'active' : ''}"
+                 style="border-left:3px solid ${!ch.alive ? 'var(--grey)' : hpPct < 0.25 ? 'var(--red)' : hpPct < 0.5 ? 'var(--orange)' : 'var(--fg)'}">
+              <div style="display:flex;gap:6px;align-items:flex-start">
+                ${getPortrait(ch.class, false)}
+                <div style="flex:1;min-width:0">
+                  <div class="combatant-name">${ch.name}</div>
+                  <div style="font-size:11px;color:${rankColor}">[${ch.rank.toUpperCase()}] ${DATA.classes.find(c=>c.id===ch.class).name} Lv.${ch.level}</div>
+                  ${ch.alive ? `
+                    <div style="font-size:11px;margin-top:2px">
+                      <span style="color:var(--fg)">${ch.hp.current}</span><span style="color:var(--grey)">/${ch.hp.max}</span>
+                      <span style="color:var(--grey);font-size:10px"> HP</span>
+                    </div>
+                    ${hpBar(ch.hp.current, ch.hp.max, 'hp')}
+                    ${ch.mp.max > 0 ? `
+                    <div style="font-size:11px;margin-top:1px">
+                      <span style="color:var(--cyan)">${ch.mp.current}</span><span style="color:var(--grey)">/${ch.mp.max}</span>
+                      <span style="color:var(--grey);font-size:10px"> MP</span>
+                    </div>
+                    ${hpBar(ch.mp.current, ch.mp.max, 'mp')}` : ''}
+                  ` : '<div class="combatant-hp low">DEAD</div>'}
+                  ${renderStatusEffects(ch)}
+                </div>
               </div>
             </div>
           `;
@@ -101,24 +175,32 @@ const CombatScreen = (function() {
   function renderEnemyColumn() {
     return `
       <div class="combat-enemies">
-        <div style="color:var(--red);font-size:12px;letter-spacing:2px;margin-bottom:4px">ENEMIES</div>
+        <div class="combat-col-title enemy-title">ENEMIES</div>
         ${cs.enemies.map((e, i) => {
           const hpPct = e.hpCur / e.hpMax;
           const statusLabel = e.status && e.status.length > 0 ? e.status.join(', ') : '';
           const dead = e.hpCur <= 0;
+          const isTarget = (i === cs.targetEnemyIdx && !dead);
           return `
-            <div class="combatant-card enemy-card ${dead ? 'dead' : ''} ${i === cs.targetEnemyIdx && !dead ? 'active' : ''}"
-                 data-enemy-idx="${i}" style="cursor:pointer"
-                 title="Click to target">
-              <div class="combatant-name">[${i+1}] ${e.name}</div>
-              <div style="color:${dead ? 'var(--grey)' : 'var(--orange)'};font-size:12px">
-                ${dead ? 'DEFEATED' : describeHP(hpPct)}
+            <div class="combatant-card enemy-card ${dead ? 'dead' : ''} ${isTarget ? 'active' : ''}"
+                 id="enemy-card-${i}"
+                 data-enemy-idx="${i}"
+                 style="cursor:${dead ? 'default' : 'pointer'};
+                        border-left:3px solid ${dead ? 'var(--grey)' : isTarget ? 'var(--yellow)' : 'var(--red)'};
+                        position:relative">
+              <div style="display:flex;gap:6px;align-items:flex-start">
+                ${getPortrait(e.id || 'goblin', true)}
+                <div style="flex:1;min-width:0">
+                  <div class="combatant-name">[${i+1}] ${e.name}</div>
+                  <div style="font-size:11px;color:var(--grey)">[${(e.rank||'FRONT').toUpperCase()}]</div>
+                  ${!dead ? `
+                    <div style="font-size:11px;color:var(--orange);margin-top:2px">${describeHP(hpPct)}</div>
+                    ${hpBar(e.hpCur, e.hpMax, 'enemy')}
+                  ` : '<div style="color:var(--grey);font-size:12px">DEFEATED</div>'}
+                  ${statusLabel ? `<div class="combatant-status">${statusLabel}</div>` : ''}
+                  ${isTarget ? '<div style="color:var(--yellow);font-size:10px;margin-top:2px">◄ TARGET</div>' : ''}
+                </div>
               </div>
-              <div class="combatant-rank">[${(e.rank||'front').toUpperCase()}] ${e.type||'normal'}</div>
-              ${statusLabel ? `<div class="combatant-status">${statusLabel}</div>` : ''}
-              ${!dead ? `<div class="progress-bar-wrap" style="margin-top:2px">
-                <div class="progress-bar-fill" style="width:${Math.max(0,hpPct*100)}%;background:var(--red)"></div>
-              </div>` : ''}
             </div>
           `;
         }).join('')}
@@ -541,12 +623,13 @@ const CombatScreen = (function() {
         break;
       }
       case 'heal': {
-        // Heal a party member (target by actor index — simplified: heal actor or most injured)
         const healTarget = getMostInjuredAlly();
         if (healTarget) {
           const before = healTarget.hp.current;
           healTarget.hp.current = Math.min(healTarget.hp.max, healTarget.hp.current + effect.amount);
-          cs.log.push(`${actor.name} casts ${spell.name}, restoring ${healTarget.hp.current - before} HP to ${healTarget.name}.`);
+          const healed = healTarget.hp.current - before;
+          cs.log.push(`${actor.name} casts ${spell.name}, restoring ${healed} HP to ${healTarget.name}.`);
+          spawnFloatNumber(healTarget.name, healed, true);
         }
         break;
       }
@@ -768,9 +851,9 @@ const CombatScreen = (function() {
     if (!ch.alive) return;
     ch.hp.current = Math.max(0, ch.hp.current - dmg);
     cs.log.push(`${attackerName} ${verb} ${ch.name} for ${dmg} damage! (${ch.hp.current}/${ch.hp.max} HP)`);
+    spawnFloatNumber(ch.name, dmg, false);
 
     if (ch.hp.current <= 0) {
-      // Apply wound to a body location
       const locs = ['head','torso','leftArm','rightArm','leftLeg','rightLeg'];
       const loc = locs[Math.floor(Math.random() * locs.length)];
       const severity = Math.random();
@@ -782,6 +865,30 @@ const CombatScreen = (function() {
       cs.log.push(`${ch.name} has fallen! (${loc} ${ch.wounds[loc]})`);
       Game.renderHUD();
     }
+  }
+
+  /* ----------------------------------------------------------
+     FLOATING DAMAGE NUMBERS
+     ---------------------------------------------------------- */
+  function spawnFloatNumber(targetName, amount, isHeal) {
+    // Attach to whatever combatant card is rendered for this target
+    const cards = document.querySelectorAll('.combatant-card, .enemy-card');
+    let card = null;
+    cards.forEach(c => {
+      const nameEl = c.querySelector('.combatant-name');
+      if (nameEl && nameEl.textContent.includes(targetName)) card = c;
+    });
+    if (!card) return;
+
+    const el = document.createElement('div');
+    el.className = isHeal ? 'dmg-float heal-float' : 'dmg-float';
+    el.textContent = isHeal ? `+${amount}` : `-${amount}`;
+    // Position randomly within card
+    el.style.left = (20 + Math.random() * 40) + 'px';
+    el.style.top  = '0px';
+    card.style.position = 'relative';
+    card.appendChild(el);
+    setTimeout(() => el.remove(), 900);
   }
 
   /* ----------------------------------------------------------

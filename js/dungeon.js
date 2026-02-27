@@ -68,7 +68,7 @@ const DungeonScreen = (function() {
 
     main.innerHTML = `
       <div id="screen-dungeon">
-        <div id="dungeon-map"></div>
+        <canvas id="dungeon-canvas" width="440" height="340"></canvas>
         <div id="dungeon-sidebar">
           <div class="dungeon-info">
             <div style="color:var(--yellow);font-size:13px;letter-spacing:2px">${dungeon.name}</div>
@@ -142,54 +142,120 @@ const DungeonScreen = (function() {
   }
 
   /* ----------------------------------------------------------
-     DRAW DUNGEON MAP
+     DUNGEON CANVAS TILE PALETTE
+     ---------------------------------------------------------- */
+  const DTILE = {
+    '#': { bg: '#1a1a1a', fg: null,      sym: null  },  // solid wall
+    '.': { bg: '#050505', fg: '#1a1a1a', sym: '·'   },  // floor
+    'D': { bg: '#221100', fg: '#ff8800', sym: 'D'   },  // door
+    'S': { bg: '#001a1a', fg: '#00ccff', sym: '\u25bc' },// stairs down
+    'U': { bg: '#001a1a', fg: '#00ccff', sym: '\u25b2' },// stairs up
+    'T': { bg: '#1a1200', fg: '#ffcc00', sym: 'T'   },  // chest
+    'E': { bg: '#1a0000', fg: '#ff3333', sym: 'E'   },  // enemy
+    'B': { bg: '#1a0000', fg: '#ff3333', sym: 'B'   }   // boss
+  };
+
+  /* ----------------------------------------------------------
+     DRAW DUNGEON MAP — Canvas tile renderer
      ---------------------------------------------------------- */
   function drawDungeonMap() {
-    const mapEl = document.getElementById('dungeon-map');
-    if (!mapEl) return;
+    const canvas = document.getElementById('dungeon-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
 
     const layout = dungeonState.layout;
-    const pp = dungeonState.playerPos;
-    const s = Game.getState();
+    const pp    = dungeonState.playerPos;
 
-    let html = '';
-    for (let y = 0; y < layout.length; y++) {
-      const row = layout[y];
-      for (let x = 0; x < row.length; x++) {
-        const revealed = dungeonState.revealed && dungeonState.revealed[y] && dungeonState.revealed[y][x];
+    const TW = 20, TH = 20;
+    const VIEW_W = 22, VIEW_H = 17;  // 440 / 20, 340 / 20
 
-        if (x === pp.x && y === pp.y) {
-          html += `<span class="dungeon-tile-party">@</span>`;
-        } else if (!revealed) {
-          html += `<span style="color:#111"> </span>`;
-        } else {
-          const ch = row[x];
-          const chestKey = `${x},${y}`;
+    // Clamp viewport
+    const mapH = layout.length;
+    const mapW = (layout[0] || '').length;
+    const startX = Math.max(0, Math.min(pp.x - Math.floor(VIEW_W / 2), mapW - VIEW_W));
+    const startY = Math.max(0, Math.min(pp.y - Math.floor(VIEW_H / 2), mapH - VIEW_H));
 
-          if (ch === 'T' && dungeonState.openedChests[chestKey]) {
-            // Opened chest shows as floor
-            html += `<span class="dungeon-tile-floor">.</span>`;
-          } else if (ch === 'E' && dungeonState.deadEnemies[chestKey]) {
-            html += `<span class="dungeon-tile-floor">.</span>`;
-          } else if (ch === 'B' && dungeonState.deadEnemies[chestKey]) {
-            html += `<span class="dungeon-tile-floor">.</span>`;
-          } else {
-            const tile = TILE[ch] || TILE['.'];
-            let sym = tile.sym;
-            let cls = `dungeon-tile-${tile.css}`;
-            // Show enemy spots as red E
-            if ((ch === 'E' || ch === 'B') && !dungeonState.deadEnemies[chestKey]) {
-              sym = 'E';
-              cls = 'dungeon-tile-enemy';
-            }
-            html += `<span class="${cls}">${sym}</span>`;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '12px "Courier New", monospace';
+
+    for (let row = startY; row < Math.min(startY + VIEW_H, mapH); row++) {
+      const rowStr = layout[row] || '';
+      for (let col = startX; col < Math.min(startX + VIEW_W, rowStr.length); col++) {
+        const sx = (col - startX) * TW;
+        const sy = (row - startY) * TH;
+        const cx = sx + TW / 2;
+        const cy = sy + TH / 2;
+
+        const revealed = dungeonState.revealed &&
+                         dungeonState.revealed[row] &&
+                         dungeonState.revealed[row][col];
+
+        if (col === pp.x && row === pp.y) {
+          // Player
+          ctx.fillStyle = '#001a00';
+          ctx.fillRect(sx, sy, TW, TH);
+          ctx.shadowColor = '#ffcc00';
+          ctx.shadowBlur = 8;
+          ctx.fillStyle = '#33ff33';
+          ctx.font = 'bold 14px "Courier New", monospace';
+          ctx.fillText('@', cx, cy);
+          ctx.shadowBlur = 0;
+          ctx.font = '12px "Courier New", monospace';
+          continue;
+        }
+
+        if (!revealed) {
+          ctx.fillStyle = '#000';
+          ctx.fillRect(sx, sy, TW, TH);
+          continue;
+        }
+
+        const ch = rowStr[col] || '#';
+        const key = `${col},${row}`;
+
+        // Treat opened chests / dead enemies as floor
+        let drawCh = ch;
+        if ((ch === 'T' && dungeonState.openedChests[key]) ||
+            ((ch === 'E' || ch === 'B') && dungeonState.deadEnemies[key])) {
+          drawCh = '.';
+        }
+
+        const td = DTILE[drawCh] || DTILE['#'];
+
+        // Background
+        ctx.fillStyle = td.bg;
+        ctx.fillRect(sx, sy, TW, TH);
+
+        // Wall — draw inner bevel line for depth
+        if (drawCh === '#') {
+          ctx.strokeStyle = '#2a2a2a';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(sx + 0.5, sy + 0.5, TW - 1, TH - 1);
+          continue;
+        }
+
+        // Symbol
+        if (td.fg && td.sym) {
+          // Enemy glow
+          if (drawCh === 'E' || drawCh === 'B') {
+            ctx.shadowColor = '#ff3333';
+            ctx.shadowBlur = 6;
           }
+          ctx.fillStyle = td.fg;
+          ctx.fillText(td.sym, cx, cy);
+          ctx.shadowBlur = 0;
         }
       }
-      html += '\n';
     }
 
-    mapEl.innerHTML = html;
+    // Outer vignette
+    const vg = ctx.createRadialGradient(220, 170, 80, 220, 170, 240);
+    vg.addColorStop(0, 'rgba(0,0,0,0)');
+    vg.addColorStop(1, 'rgba(0,0,0,0.5)');
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
   /* ----------------------------------------------------------

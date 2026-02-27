@@ -47,7 +47,7 @@ const WorldScreen = (function() {
     main.innerHTML = `
       <div id="screen-overworld">
         <div id="map-container">
-          <div id="overworld-map"></div>
+          <canvas id="overworld-canvas" width="600" height="384"></canvas>
         </div>
         <div id="map-sidebar">
           <div class="location-info" id="loc-info">
@@ -106,42 +106,106 @@ const WorldScreen = (function() {
   }
 
   /* ----------------------------------------------------------
-     DRAW MAP (ASCII tiles with party marker)
+     CANVAS TILE PALETTE
+     ---------------------------------------------------------- */
+  const TILE_DRAW = {
+    '~': { bg: '#000a22', fg: '#003399', sym: '≈' },
+    '.': { bg: '#0d3a0d', fg: '#1a7a1a', sym: '·' },
+    'f': { bg: '#002200', fg: '#005500', sym: '♣' },
+    '^': { bg: '#2a2a2a', fg: '#888888', sym: '^' },
+    '=': { bg: '#1a1008', fg: '#886633', sym: '=' },
+    'P': { bg: '#0f2a0f', fg: '#2d8c2d', sym: ':' },
+    'T': { bg: '#221100', fg: '#ffcc00', sym: 'T' },
+    'D': { bg: '#1a0000', fg: '#ff3333', sym: 'D' }
+  };
+
+  /* ----------------------------------------------------------
+     DRAW MAP — Canvas tile renderer
      ---------------------------------------------------------- */
   function drawMap() {
     const s = Game.getState();
-    const mapEl = document.getElementById('overworld-map');
-    if (!mapEl) return;
+    const canvas = document.getElementById('overworld-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
 
     const mapData = DATA.overworldMap;
     const px = s.worldPos.x;
     const py = s.worldPos.y;
 
-    // View window: 25 cols × 16 rows centered on party (or clamped to bounds)
-    const VIEW_W = 25;
-    const VIEW_H = 16;
+    const TW = 24, TH = 24;          // tile dimensions in pixels
+    const VIEW_W = 25, VIEW_H = 16;  // viewport in tiles
     const mapH = mapData.length;
-    const mapW = mapData[0].length;
+    const mapW = (mapData[0] || '').length;
 
-    const startX = Math.max(0, Math.min(px - Math.floor(VIEW_W/2), mapW - VIEW_W));
-    const startY = Math.max(0, Math.min(py - Math.floor(VIEW_H/2), mapH - VIEW_H));
+    const startX = Math.max(0, Math.min(px - Math.floor(VIEW_W / 2), mapW - VIEW_W));
+    const startY = Math.max(0, Math.min(py - Math.floor(VIEW_H / 2), mapH - VIEW_H));
 
-    let html = '';
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '14px "Courier New", monospace';
+
     for (let row = startY; row < Math.min(startY + VIEW_H, mapH); row++) {
       const rowStr = mapData[row] || '';
       for (let col = startX; col < Math.min(startX + VIEW_W, rowStr.length); col++) {
+        const sx = (col - startX) * TW;
+        const sy = (row - startY) * TH;
+        const cx = sx + TW / 2;
+        const cy = sy + TH / 2;
+
         if (col === px && row === py) {
-          html += `<span class="map-tile-party">@</span>`;
+          // Party marker — green glow
+          ctx.fillStyle = '#002800';
+          ctx.fillRect(sx, sy, TW, TH);
+          ctx.shadowColor = '#ffcc00';
+          ctx.shadowBlur = 10;
+          ctx.fillStyle = '#33ff33';
+          ctx.font = 'bold 16px "Courier New", monospace';
+          ctx.fillText('@', cx, cy);
+          ctx.shadowBlur = 0;
+          ctx.font = '14px "Courier New", monospace';
         } else {
           const ch = rowStr[col] || ' ';
-          const tile = TILES[ch] || TILES['.'];
-          html += `<span class="map-tile-${tile.css}">${ch}</span>`;
+          const td = TILE_DRAW[ch] || TILE_DRAW['.'];
+
+          // Background fill
+          ctx.fillStyle = td.bg;
+          ctx.fillRect(sx, sy, TW, TH);
+
+          // Town / dungeon get a subtle border highlight
+          if (ch === 'T') {
+            ctx.strokeStyle = '#443300';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(sx + 0.5, sy + 0.5, TW - 1, TH - 1);
+          } else if (ch === 'D') {
+            ctx.strokeStyle = '#330000';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(sx + 0.5, sy + 0.5, TW - 1, TH - 1);
+          }
+
+          // Symbol text
+          ctx.fillStyle = td.fg;
+          ctx.fillText(td.sym, cx, cy);
         }
       }
-      html += '\n';
     }
 
-    mapEl.innerHTML = html;
+    // Subtle grid overlay
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 0.5;
+    for (let c = 0; c <= VIEW_W; c++) {
+      ctx.beginPath(); ctx.moveTo(c * TW, 0); ctx.lineTo(c * TW, VIEW_H * TH); ctx.stroke();
+    }
+    for (let r = 0; r <= VIEW_H; r++) {
+      ctx.beginPath(); ctx.moveTo(0, r * TH); ctx.lineTo(VIEW_W * TW, r * TH); ctx.stroke();
+    }
+
+    // Vignette border darkening
+    const vg = ctx.createRadialGradient(300, 192, 140, 300, 192, 310);
+    vg.addColorStop(0, 'rgba(0,0,0,0)');
+    vg.addColorStop(1, 'rgba(0,0,0,0.4)');
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
   /* ----------------------------------------------------------
