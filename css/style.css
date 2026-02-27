@@ -1,0 +1,927 @@
+/* ============================================================
+   PHANTASIE III: WRATH OF NIKADEMUS
+   Retro terminal-style CSS
+   ============================================================ */
+
+:root {
+  --bg:        #0a0a0a;
+  --fg:        #33ff33;
+  --fg-dim:    #1a8c1a;
+  --yellow:    #ffcc00;
+  --cyan:      #00ccff;
+  --red:       #ff3333;
+  --orange:    #ff8800;
+  --white:     #cccccc;
+  --grey:      #555555;
+  --border:    #226622;
+  --highlight: #003300;
+  --panel-bg:  #050f05;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: #000;
+  color: var(--fg);
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 15px;
+  line-height: 1.4;
+  overflow: hidden;
+}
+
+/* Scanline overlay effect */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.08) 2px,
+    rgba(0,0,0,0.08) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+#game-container {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  max-width: 1024px;
+  margin: 0 auto;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+
+/* ============================================================
+   HUD (party status bar)
+   ============================================================ */
+#hud {
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-bg);
+  padding: 4px 8px;
+  min-height: 28px;
+}
+
+#party-hud {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hud-char {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.hud-name { color: var(--yellow); }
+.hud-hp   { color: var(--fg); }
+.hud-hp.low  { color: var(--red); }
+.hud-hp.mid  { color: var(--orange); }
+.hud-dead { color: var(--grey); text-decoration: line-through; }
+
+/* ============================================================
+   MAIN CONTENT
+   ============================================================ */
+#main-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0;
+}
+
+/* ============================================================
+   MESSAGE LOG
+   ============================================================ */
+#message-log {
+  border-top: 1px solid var(--border);
+  background: var(--panel-bg);
+  height: 90px;
+  overflow-y: auto;
+  padding: 4px 8px;
+}
+
+#messages p {
+  font-size: 13px;
+  color: var(--white);
+  margin: 1px 0;
+}
+
+#messages p.msg-combat  { color: var(--red); }
+#messages p.msg-magic   { color: var(--cyan); }
+#messages p.msg-info    { color: var(--fg); }
+#messages p.msg-gold    { color: var(--yellow); }
+#messages p.msg-system  { color: var(--grey); }
+
+/* ============================================================
+   UTILITY
+   ============================================================ */
+.hidden { display: none !important; }
+
+.text-fg     { color: var(--fg); }
+.text-green  { color: var(--fg); }
+.text-yellow { color: var(--yellow); }
+.text-cyan   { color: var(--cyan); }
+.text-red    { color: var(--red); }
+.text-orange { color: var(--orange); }
+.text-white  { color: var(--white); }
+.text-grey   { color: var(--grey); }
+
+.panel {
+  border: 1px solid var(--border);
+  background: var(--panel-bg);
+  padding: 12px;
+  margin: 8px;
+}
+
+.panel-title {
+  color: var(--yellow);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  font-size: 16px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+hr.sep {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 8px 0;
+}
+
+/* ============================================================
+   BUTTONS & MENUS
+   ============================================================ */
+.btn {
+  display: inline-block;
+  padding: 4px 14px;
+  border: 1px solid var(--border);
+  background: var(--panel-bg);
+  color: var(--fg);
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  transition: background 0.1s, color 0.1s;
+  user-select: none;
+  margin: 2px;
+}
+
+.btn:hover, .btn.active {
+  background: var(--highlight);
+  color: var(--yellow);
+  border-color: var(--fg);
+}
+
+.btn:disabled {
+  color: var(--grey);
+  border-color: var(--grey);
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  border-color: var(--fg);
+  color: var(--yellow);
+}
+
+.btn-danger {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.btn-danger:hover {
+  background: #1a0000;
+  color: var(--red);
+}
+
+.menu-list {
+  list-style: none;
+}
+
+.menu-list li {
+  padding: 5px 0;
+  cursor: pointer;
+  color: var(--white);
+}
+
+.menu-list li:hover {
+  color: var(--yellow);
+}
+
+.menu-list li .key {
+  color: var(--cyan);
+  margin-right: 8px;
+  min-width: 20px;
+  display: inline-block;
+}
+
+/* ============================================================
+   TITLE SCREEN
+   ============================================================ */
+#screen-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 400px;
+  padding: 20px;
+  text-align: center;
+}
+
+.title-logo {
+  color: var(--yellow);
+  font-size: 13px;
+  line-height: 1.2;
+  margin-bottom: 20px;
+  white-space: pre;
+}
+
+.title-subtitle {
+  color: var(--cyan);
+  font-size: 18px;
+  letter-spacing: 4px;
+  margin-bottom: 8px;
+}
+
+.title-game {
+  color: var(--fg);
+  font-size: 14px;
+  margin-bottom: 30px;
+  letter-spacing: 2px;
+}
+
+.title-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 260px;
+}
+
+.title-menu .btn {
+  font-size: 16px;
+  padding: 8px 20px;
+  letter-spacing: 2px;
+}
+
+.title-credits {
+  margin-top: 30px;
+  color: var(--grey);
+  font-size: 12px;
+}
+
+/* ============================================================
+   CHARACTER CREATION
+   ============================================================ */
+#screen-charcreate {
+  padding: 12px;
+}
+
+.charcreate-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin: 8px 0;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+}
+
+.stat-name { color: var(--white); }
+.stat-val  { color: var(--yellow); font-weight: bold; }
+
+.race-list, .class-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.select-option {
+  padding: 4px 8px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.1s;
+}
+
+.select-option:hover { border-color: var(--fg); color: var(--yellow); }
+.select-option.selected {
+  border-color: var(--fg);
+  background: var(--highlight);
+  color: var(--yellow);
+}
+
+.name-input {
+  background: #000;
+  border: 1px solid var(--border);
+  color: var(--fg);
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  padding: 4px 8px;
+  width: 100%;
+  margin: 4px 0;
+}
+
+.name-input:focus {
+  outline: none;
+  border-color: var(--fg);
+}
+
+/* ============================================================
+   PARTY MANAGEMENT
+   ============================================================ */
+.party-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.party-table th {
+  color: var(--cyan);
+  border-bottom: 1px solid var(--border);
+  padding: 4px 8px;
+  text-align: left;
+}
+
+.party-table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid #111;
+}
+
+.party-table tr:hover td { background: var(--highlight); }
+.party-table .rank-front  { color: var(--red); }
+.party-table .rank-mid    { color: var(--orange); }
+.party-table .rank-middle { color: var(--orange); }
+.party-table .rank-rear   { color: var(--cyan); }
+.rank-front  { color: var(--red); }
+.rank-mid    { color: var(--orange); }
+.rank-middle { color: var(--orange); }
+.rank-rear   { color: var(--cyan); }
+
+/* ============================================================
+   OVERWORLD MAP
+   ============================================================ */
+#screen-overworld {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  height: 100%;
+}
+
+#map-container {
+  flex: 1;
+}
+
+#overworld-map {
+  font-size: 14px;
+  line-height: 1.3;
+  letter-spacing: 2px;
+  white-space: pre;
+  cursor: default;
+  padding: 4px;
+  background: #000;
+  border: 1px solid var(--border);
+}
+
+.map-tile-grass    { color: #1a5c1a; }
+.map-tile-forest   { color: #005500; }
+.map-tile-mountain { color: #6b6b6b; }
+.map-tile-water    { color: #003399; }
+.map-tile-road     { color: #886633; }
+.map-tile-town     { color: var(--yellow); }
+.map-tile-dungeon  { color: var(--red); }
+.map-tile-party    { color: var(--fg); font-weight: bold; }
+.map-tile-plains   { color: #2d8c2d; }
+
+#map-sidebar {
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.location-info {
+  border: 1px solid var(--border);
+  background: var(--panel-bg);
+  padding: 8px;
+  font-size: 13px;
+}
+
+.compass {
+  text-align: center;
+  font-size: 18px;
+  color: var(--cyan);
+  margin: 4px 0;
+}
+
+.map-legend {
+  font-size: 12px;
+  color: var(--grey);
+}
+
+.map-legend span { color: var(--white); }
+
+/* ============================================================
+   TOWN / SERVICES
+   ============================================================ */
+#screen-town, #screen-guild, #screen-bank, #screen-inn,
+#screen-armory, #screen-mystic {
+  padding: 12px;
+}
+
+.town-header {
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+}
+
+.town-name {
+  color: var(--yellow);
+  font-size: 22px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}
+
+.town-desc {
+  color: var(--grey);
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.service-menu {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.service-btn {
+  padding: 14px;
+  border: 1px solid var(--border);
+  background: var(--panel-bg);
+  color: var(--fg);
+  cursor: pointer;
+  text-align: center;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  letter-spacing: 1px;
+  transition: all 0.1s;
+}
+
+.service-btn:hover {
+  border-color: var(--fg);
+  background: var(--highlight);
+  color: var(--yellow);
+}
+
+.service-btn .svc-icon {
+  display: block;
+  font-size: 24px;
+  margin-bottom: 6px;
+}
+
+.service-btn .svc-key {
+  color: var(--cyan);
+  font-size: 12px;
+}
+
+/* Shop table */
+.shop-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin: 8px 0;
+}
+
+.shop-table th {
+  color: var(--cyan);
+  border-bottom: 1px solid var(--border);
+  padding: 4px 8px;
+  text-align: left;
+}
+
+.shop-table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid #111;
+}
+
+.shop-table tr:hover td { background: var(--highlight); cursor: pointer; }
+.shop-table .price { color: var(--yellow); }
+.shop-table .req   { color: var(--grey); font-size: 12px; }
+
+/* ============================================================
+   COMBAT SCREEN
+   ============================================================ */
+#screen-combat {
+  padding: 8px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.combat-header {
+  color: var(--yellow);
+  text-align: center;
+  font-size: 14px;
+  letter-spacing: 3px;
+  padding: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.combat-field {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+}
+
+.combat-party, .combat-enemies {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+}
+
+.combat-vs {
+  display: flex;
+  align-items: center;
+  color: var(--red);
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.combatant-card {
+  border: 1px solid var(--border);
+  background: var(--panel-bg);
+  padding: 5px 8px;
+  font-size: 12px;
+}
+
+.combatant-card.active {
+  border-color: var(--yellow);
+  background: #001a00;
+}
+
+.combatant-card.dead {
+  opacity: 0.4;
+  border-color: var(--grey);
+}
+
+.combatant-name { color: var(--yellow); font-size: 13px; }
+.combatant-hp   { color: var(--fg); }
+.combatant-hp.low { color: var(--red); }
+.combatant-rank { color: var(--grey); font-size: 11px; }
+.combatant-status { color: var(--orange); font-size: 11px; }
+
+.enemy-card .combatant-name { color: var(--red); }
+
+.combat-actions {
+  border: 1px solid var(--border);
+  background: var(--panel-bg);
+  padding: 8px;
+}
+
+.combat-actions-title {
+  color: var(--cyan);
+  font-size: 12px;
+  margin-bottom: 6px;
+  letter-spacing: 2px;
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.action-btn {
+  padding: 5px 4px;
+  border: 1px solid var(--border);
+  background: #000;
+  color: var(--fg);
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  text-align: center;
+  transition: all 0.1s;
+}
+
+.action-btn:hover {
+  border-color: var(--fg);
+  background: var(--highlight);
+  color: var(--yellow);
+}
+
+.action-btn .key {
+  color: var(--cyan);
+  display: block;
+  font-size: 11px;
+}
+
+/* ============================================================
+   DUNGEON SCREEN
+   ============================================================ */
+#screen-dungeon {
+  padding: 8px;
+  display: flex;
+  gap: 8px;
+  height: 100%;
+}
+
+#dungeon-map {
+  font-size: 16px;
+  line-height: 1.4;
+  letter-spacing: 3px;
+  white-space: pre;
+  background: #000;
+  border: 1px solid var(--border);
+  padding: 4px;
+}
+
+.dungeon-tile-wall   { color: #444; }
+.dungeon-tile-floor  { color: #222; }
+.dungeon-tile-door   { color: var(--orange); }
+.dungeon-tile-stairs { color: var(--cyan); }
+.dungeon-tile-chest  { color: var(--yellow); }
+.dungeon-tile-party  { color: var(--fg); font-weight: bold; }
+.dungeon-tile-enemy  { color: var(--red); }
+
+#dungeon-sidebar {
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dungeon-info {
+  border: 1px solid var(--border);
+  background: var(--panel-bg);
+  padding: 8px;
+  font-size: 13px;
+}
+
+/* ============================================================
+   LEVEL UP SCREEN
+   ============================================================ */
+#screen-levelup {
+  padding: 16px;
+}
+
+.levelup-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 400px;
+  margin: 16px 0;
+}
+
+.levelup-option {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  background: var(--panel-bg);
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.levelup-option:hover {
+  border-color: var(--fg);
+  background: var(--highlight);
+  color: var(--yellow);
+}
+
+.levelup-option.selected {
+  border-color: var(--yellow);
+  background: var(--highlight);
+  color: var(--yellow);
+}
+
+/* ============================================================
+   GAME OVER / VICTORY
+   ============================================================ */
+#screen-gameover {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  padding: 20px;
+}
+
+.gameover-title {
+  font-size: 36px;
+  letter-spacing: 6px;
+  color: var(--red);
+  margin-bottom: 16px;
+  text-shadow: 0 0 20px rgba(255,50,50,0.5);
+}
+
+.victory-title {
+  font-size: 32px;
+  letter-spacing: 4px;
+  color: var(--yellow);
+  margin-bottom: 16px;
+  text-shadow: 0 0 20px rgba(255,200,0,0.5);
+}
+
+/* ============================================================
+   SPELL LIST
+   ============================================================ */
+.spell-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.spell-card {
+  border: 1px solid var(--border);
+  background: var(--panel-bg);
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.spell-card:hover {
+  border-color: var(--cyan);
+  background: var(--highlight);
+}
+
+.spell-name { color: var(--cyan); font-size: 13px; }
+.spell-mp   { color: var(--yellow); font-size: 12px; }
+.spell-desc { color: var(--grey); font-size: 11px; }
+
+/* ============================================================
+   CHARACTER SHEET
+   ============================================================ */
+.char-sheet {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.char-detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+  border-bottom: 1px dotted #1a3a1a;
+}
+
+.char-detail-label { color: var(--white); }
+.char-detail-val   { color: var(--yellow); }
+
+.wound-display {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.wound-ok   { color: var(--fg); }
+.wound-minor { color: var(--orange); }
+.wound-broken { color: var(--red); }
+.wound-removed { color: var(--grey); text-decoration: line-through; }
+
+/* ============================================================
+   SCROLLBAR STYLING
+   ============================================================ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track { background: #000; }
+::-webkit-scrollbar-thumb { background: var(--border); }
+::-webkit-scrollbar-thumb:hover { background: var(--fg-dim); }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 700px) {
+  html, body { font-size: 13px; }
+  .charcreate-layout { grid-template-columns: 1fr; }
+  .combat-field { grid-template-columns: 1fr 1fr; }
+  .combat-vs { display: none; }
+  #dungeon-sidebar { display: none; }
+  .action-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ============================================================
+   INPUT DIALOG
+   ============================================================ */
+.dialog-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.dialog-box {
+  border: 2px solid var(--fg);
+  background: var(--panel-bg);
+  padding: 20px;
+  min-width: 320px;
+  max-width: 500px;
+}
+
+.dialog-title {
+  color: var(--yellow);
+  font-size: 16px;
+  letter-spacing: 2px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+.dialog-body {
+  color: var(--white);
+  margin-bottom: 14px;
+  line-height: 1.6;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* Gold amount input */
+.gold-input {
+  background: #000;
+  border: 1px solid var(--border);
+  color: var(--yellow);
+  font-family: 'Courier New', monospace;
+  font-size: 16px;
+  padding: 4px 8px;
+  width: 100%;
+  margin: 8px 0;
+}
+
+.gold-input:focus { outline: none; border-color: var(--yellow); }
+
+/* ============================================================
+   FLASH ANIMATION
+   ============================================================ */
+@keyframes flash {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.2; }
+}
+
+.flash { animation: flash 0.4s ease-in-out 2; }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.fade-in { animation: fadeIn 0.3s ease-in; }
+
+/* ============================================================
+   PROGRESS BAR (HP/MP)
+   ============================================================ */
+.progress-bar-wrap {
+  background: #111;
+  border: 1px solid var(--border);
+  height: 8px;
+  width: 100%;
+  margin: 2px 0;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  transition: width 0.3s;
+}
+
+.progress-bar-hp   { background: var(--fg); }
+.progress-bar-hp.low { background: var(--red); }
+.progress-bar-hp.mid { background: var(--orange); }
+.progress-bar-mp   { background: var(--cyan); }

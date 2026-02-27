@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phantasie III: Wrath of Nikademus</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="game-container">
+    <!-- Top HUD: Party status bar -->
+    <div id="hud" class="hidden">
+      <div id="party-hud"></div>
+    </div>
+
+    <!-- Main content area -->
+    <div id="main-content">
+      <!-- Screens are rendered here dynamically -->
+    </div>
+
+    <!-- Message log at bottom -->
+    <div id="message-log" class="hidden">
+      <div id="messages"></div>
+    </div>
+  </div>
+
+  <!-- Scripts loaded in dependency order -->
+  <script src="js/data.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/character.js"></script>
+  <script src="js/town.js"></script>
+  <script src="js/world.js"></script>
+  <script src="js/combat.js"></script>
+  <script src="js/dungeon.js"></script>
+  <script>
+    // Boot the game when DOM is ready
+    window.addEventListener('DOMContentLoaded', () => {
+      Game.init();
+    });
+  </script>
+</body>
+</html>
