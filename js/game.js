@@ -1,5 +1,5 @@
 /* ============================================================
-   PHANTASIE III - CORE GAME ENGINE
+   VALDORIA: THE DARK ASCENSION - CORE GAME ENGINE
    State management, screen routing, save/load, message log
    ============================================================ */
 
@@ -9,7 +9,7 @@ const Game = (function() {
   /* ----------------------------------------------------------
      GAME STATE
      ---------------------------------------------------------- */
-  const SAVE_KEY = 'phantasie3_save_v1';
+  const SAVE_KEY = 'valdoria_save_v1';
 
   let state = null;  // the live game state object
 
@@ -20,16 +20,16 @@ const Game = (function() {
       screenData: {},
       party: [],          // array of character objects (up to 6)
       partyGold: 0,
-      worldPos: { x: 2, y: 2 },
+      worldPos: { x: 4, y: 5 },
       questFlags: {
-        giantEyeFound: false,
-        dwarvenRuneFound: false,
-        lightCrystalFound: false,
-        darkShardFound: false,
-        lordWoodMet: false,
-        nikademusConfronted: false,
-        nikademusDefeated: false,
-        joinedNikademus: false
+        sealOfFlameFound: false,
+        sealOfStoneFound: false,
+        sealOfWaveFound: false,
+        sealOfLightFound: false,
+        elderSageSpoken: false,
+        malacharConfronted: false,
+        malacharDefeated: false,
+        joinedMalachar: false
       },
       visitedTiles: {},
       dungeonProgress: {},  // dungeonId -> { floorsVisited: [], chestsTaken: [], enemiesDefeated: [] }
@@ -151,7 +151,7 @@ const Game = (function() {
       charsheet:   () => CharScreen.renderSheet(main, data),
       gameover:    () => renderGameOver(main, data),
       victory:     () => renderVictory(main, data),
-      nikademus:   () => renderNikademus(main, data)
+      malachar:    () => renderMalachar(main, data)
     };
 
     const renderer = renderers[name];
@@ -170,20 +170,20 @@ const Game = (function() {
     main.innerHTML = `
       <div id="screen-title">
         <div class="title-logo">
- ____  _   _    _    _   _ _____  _    ____ ___ _____
-|  _ \\| | | |  / \\  | \\ | |_   _|/ \\  / ___|_ _| ____|
-| |_) | |_| | / _ \\ |  \\| | | | / _ \\ \\___ \\| ||  _|
-|  __/|  _  |/ ___ \\| |\\  | | |/ ___ \\ ___) | || |___
-|_|   |_| |_/_/   \\_|_| \\_| |_/_/   \\_|____/___|_____|
+__   ___    _    _     ____   ___  ____  ___    _
+\\ \\ / / \\  | |  | |   |  _ \\/ _ \\|  _ \\|_ _|  / \\
+ \\ V / _ \\ | |  | |   | | | | | | | |_) || |  / _ \\
+  | / ___ \\| |__| |___| |_| | |_| |  _ < | | / ___ \\
+  |_/_/   \\_|_____|_____|____/ \\___/|_| \\_|___/_/   \\_\\
         </div>
-        <div class="title-subtitle">WRATH OF NIKADEMUS</div>
-        <div class="title-game">An Epic Adventure in the Land of Scandor</div>
+        <div class="title-subtitle">THE DARK ASCENSION</div>
+        <div class="title-game">An Epic Quest to Shatter the Shadow Seal</div>
         <div class="title-menu">
           <button class="btn btn-primary" id="btn-new">[ NEW GAME ]</button>
           <button class="btn ${saveExists ? '' : 'disabled'}" id="btn-load" ${saveExists ? '' : 'disabled'}>[ LOAD GAME ]</button>
         </div>
         <div class="title-credits">
-          Inspired by Phantasie III (1987) by Strategic Simulations Inc.<br>
+          The realm of Valdoria awaits. Lord Malachar must be stopped.<br>
           Use arrow keys or WASD to move. Number keys for menus.
         </div>
       </div>
@@ -213,7 +213,7 @@ const Game = (function() {
     main.innerHTML = `
       <div id="screen-gameover">
         <div class="gameover-title">YOUR PARTY HAS FALLEN</div>
-        <p class="text-white" style="margin:16px 0">The darkness of Nikademus consumes Scandor.<br>
+        <p class="text-white" style="margin:16px 0">The Shadow Seal remains unbroken. Malachar's darkness spreads across Valdoria.<br>
         Your quest has ended in failure.</p>
         <p class="text-grey" style="margin:8px 0">${data.message || ''}</p>
         <div style="margin-top:30px;display:flex;gap:16px;justify-content:center">
@@ -230,14 +230,14 @@ const Game = (function() {
   }
 
   function renderVictory(main, data) {
-    const joined = state.questFlags.joinedNikademus;
+    const joined = state.questFlags.joinedMalachar;
     main.innerHTML = `
       <div id="screen-gameover">
-        <div class="victory-title">${joined ? 'POWER ABSOLUTE' : 'NIKADEMUS DEFEATED!'}</div>
+        <div class="victory-title">${joined ? 'SHADOW KING ASCENDANT' : 'MALACHAR DEFEATED!'}</div>
         <p class="text-yellow" style="margin:16px 0;font-size:14px">
           ${joined
-            ? 'You have joined Nikademus. Together, you rule Scandor with an iron fist.\nThe land trembles before your combined might!'
-            : 'The dark lord Nikademus has been vanquished!\nScandor is free at last. Songs will be sung of your heroic party for generations.'}
+            ? "You have absorbed the Shadow Seal's power. Malachar's will becomes your own. The realm of Valdoria trembles as you ascend to the Shadow Throne!"
+            : "The Shadow King Lord Malachar has been vanquished! The Shadow Seal is shattered. Light returns to Valdoria. Songs will be sung of your heroic party for generations to come."}
         </p>
         <div style="margin:16px 0;color:var(--fg);font-size:13px">
           <p>Party Gold: <span class="text-yellow">${state.partyGold}</span></p>
@@ -252,36 +252,36 @@ const Game = (function() {
   }
 
   /* ----------------------------------------------------------
-     NIKADEMUS FINAL CONFRONTATION
+     MALACHAR FINAL CONFRONTATION
      ---------------------------------------------------------- */
-  function renderNikademus(main, data) {
+  function renderMalachar(main, data) {
     main.innerHTML = `
       <div style="padding:20px;text-align:center;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center">
         <div style="color:var(--red);font-size:20px;letter-spacing:3px;margin-bottom:20px">
-          *** NIKADEMUS SPEAKS ***
+          *** LORD MALACHAR SPEAKS ***
         </div>
         <div style="color:var(--white);max-width:500px;line-height:1.8;margin-bottom:24px;font-size:13px">
-          "So... you have come. I expected nothing less from champions bold enough to breach my castle.<br><br>
-          Know this: I do not seek destruction for its own sake. I seek ORDER — the iron order that only I can provide.<br><br>
-          Join me, and share in the rule of Scandor. Together, we shall bring peace through strength.<br><br>
-          <span class="text-yellow">Or... you may fight. But know that few who challenge me draw breath to tell the tale."</span>
+          "So... the four Seals have brought you to my throne. Impressive, I admit.<br><br>
+          Know this: the shadow that covers Valdoria is not destruction — it is <em>transcendence</em>. The weak fear the dark. The strong <em>become</em> it.<br><br>
+          Kneel before me. Absorb the Shadow Seal's power and rule at my side.<br><br>
+          <span class="text-yellow">Or draw your steel. But understand — you cannot destroy what you might yet become."</span>
         </div>
         <div style="display:flex;gap:20px;margin-top:10px">
-          <button class="btn btn-danger" id="btn-fight">[ FIGHT NIKADEMUS ]</button>
-          <button class="btn btn-primary" id="btn-join">[ JOIN NIKADEMUS ]</button>
+          <button class="btn btn-danger" id="btn-fight">[ FIGHT MALACHAR ]</button>
+          <button class="btn btn-primary" id="btn-join">[ ABSORB THE SHADOW ]</button>
         </div>
       </div>
     `;
 
     document.getElementById('btn-fight').onclick = () => {
-      addMessage('The battle against Nikademus begins!', 'msg-combat');
-      const nikEnemy = DATA.enemies.find(e => e.id === 'nikademus');
+      addMessage('The final battle against Lord Malachar begins!', 'msg-combat');
+      const bossEnemy = DATA.enemies.find(e => e.id === 'malachar');
       showScreen('combat', {
-        enemies: [nikEnemy],
+        enemies: [bossEnemy],
         returnScreen: 'overworld',
         isFinalBoss: true,
         onVictory: () => {
-          state.questFlags.nikademusDefeated = true;
+          state.questFlags.malacharDefeated = true;
           save();
           showScreen('victory');
         }
@@ -289,8 +289,8 @@ const Game = (function() {
     };
 
     document.getElementById('btn-join').onclick = () => {
-      state.questFlags.joinedNikademus = true;
-      state.questFlags.nikademusDefeated = true;
+      state.questFlags.joinedMalachar = true;
+      state.questFlags.malacharDefeated = true;
       save();
       showScreen('victory');
     };
@@ -332,7 +332,7 @@ const Game = (function() {
 
   function isQuestComplete() {
     const q = state.questFlags;
-    return q.giantEyeFound && q.dwarvenRuneFound && q.lightCrystalFound && q.darkShardFound;
+    return q.sealOfFlameFound && q.sealOfStoneFound && q.sealOfWaveFound && q.sealOfLightFound;
   }
 
   /* ----------------------------------------------------------

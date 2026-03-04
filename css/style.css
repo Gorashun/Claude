@@ -1,21 +1,25 @@
 /* ============================================================
-   PHANTASIE III: WRATH OF NIKADEMUS
-   Retro terminal-style CSS
+   VALDORIA: THE DARK ASCENSION
+   Amiga-inspired retro pixel art CSS
    ============================================================ */
 
 :root {
-  --bg:        #0a0a0a;
-  --fg:        #33ff33;
-  --fg-dim:    #1a8c1a;
-  --yellow:    #ffcc00;
-  --cyan:      #00ccff;
-  --red:       #ff3333;
-  --orange:    #ff8800;
-  --white:     #cccccc;
-  --grey:      #555555;
-  --border:    #226622;
-  --highlight: #003300;
-  --panel-bg:  #050f05;
+  --bg:          #0a0a0a;
+  --fg:          #3dff55;
+  --fg-dim:      #1a8c2a;
+  --yellow:      #ffcc00;
+  --cyan:        #00ccff;
+  --red:         #ff3333;
+  --orange:      #ff8800;
+  --white:       #cccccc;
+  --grey:        #555555;
+  --border:      #226622;
+  --highlight:   #003300;
+  --panel-bg:    #050f05;
+  --amiga-gold:  #ffbb00;
+  --amiga-sky:   #4488ff;
+  --amiga-purple:#9933ff;
+  --amiga-mint:  #55ff99;
 }
 
 * {
@@ -1047,3 +1051,112 @@ hr.sep {
   border-left: 1px solid var(--border);
   padding-left: 12px;
 }
+
+/* ============================================================
+   EXPLORATION EVENT MODAL (Gloomhaven-style)
+   ============================================================ */
+.event-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+}
+
+.event-modal {
+  border: 2px solid var(--amiga-gold);
+  background: #080808;
+  padding: 24px 28px;
+  max-width: 520px;
+  width: 90%;
+  box-shadow: 0 0 30px rgba(255, 187, 0, 0.25), 0 0 60px rgba(255, 187, 0, 0.08);
+}
+
+.event-icon {
+  font-size: 32px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.event-title {
+  color: var(--amiga-gold);
+  font-size: 17px;
+  letter-spacing: 3px;
+  text-align: center;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  border-bottom: 1px solid #332200;
+  padding-bottom: 10px;
+}
+
+.event-text {
+  color: var(--white);
+  font-size: 13px;
+  line-height: 1.7;
+  margin-bottom: 18px;
+  font-style: italic;
+  border-left: 3px solid var(--border);
+  padding-left: 12px;
+}
+
+.event-result {
+  color: var(--amiga-mint);
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 14px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  background: var(--panel-bg);
+}
+
+.event-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.event-choice {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  background: var(--panel-bg);
+  color: var(--fg);
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  text-align: left;
+  transition: all 0.1s;
+}
+
+.event-choice:hover {
+  border-color: var(--amiga-gold);
+  background: var(--highlight);
+  color: var(--amiga-gold);
+}
+
+.event-close {
+  display: block;
+  width: 100%;
+  padding: 6px;
+  border: 1px solid var(--grey);
+  background: transparent;
+  color: var(--grey);
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  text-align: center;
+  margin-top: 4px;
+  transition: all 0.1s;
+}
+
+.event-close:hover {
+  border-color: var(--fg);
+  color: var(--fg);
+}
+
+.map-tile-ruins  { color: var(--orange); }
+.map-tile-shrine { color: var(--amiga-sky); }
+.map-tile-swamp  { color: #224422; }
+.map-tile-tundra { color: #aaccff; }

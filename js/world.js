@@ -1,5 +1,5 @@
 /* ============================================================
-   PHANTASIE III - OVERWORLD MAP & EXPLORATION
+   VALDORIA: THE DARK ASCENSION - OVERWORLD MAP & EXPLORATION
    Tile-based movement, random encounters, location events
    ============================================================ */
 
@@ -10,33 +10,41 @@ const WorldScreen = (function() {
      TILE DEFINITIONS
      ---------------------------------------------------------- */
   const TILES = {
-    '~': { name: 'Ocean',    passable: false, sym: '~', css: 'water',    encounter: false },
-    '.': { name: 'Grassland',passable: true,  sym: '.', css: 'grass',    encounter: true,  encRate: 0.12 },
-    'f': { name: 'Forest',   passable: true,  sym: 'f', css: 'forest',   encounter: true,  encRate: 0.18 },
-    '^': { name: 'Mountain', passable: true,  sym: '^', css: 'mountain', encounter: true,  encRate: 0.10 },
-    '=': { name: 'Road',     passable: true,  sym: '=', css: 'road',     encounter: true,  encRate: 0.06 },
-    'P': { name: 'Plains',   passable: true,  sym: 'P', css: 'plains',   encounter: true,  encRate: 0.10 },
-    'T': { name: 'Town',     passable: true,  sym: 'T', css: 'town',     encounter: false, isTown: true },
-    'D': { name: 'Dungeon',  passable: true,  sym: 'D', css: 'dungeon',  encounter: false, isDungeon: true }
+    '~': { name: 'Ocean',        passable: false, sym: '~', css: 'water',    encounter: false },
+    '.': { name: 'Grassland',    passable: true,  sym: '.', css: 'grass',    encounter: true,  encRate: 0.12 },
+    'f': { name: 'Forest',       passable: true,  sym: 'f', css: 'forest',   encounter: true,  encRate: 0.18 },
+    '^': { name: 'Mountain',     passable: true,  sym: '^', css: 'mountain', encounter: true,  encRate: 0.10 },
+    '=': { name: 'Road',         passable: true,  sym: '=', css: 'road',     encounter: true,  encRate: 0.06 },
+    'P': { name: 'Plains',       passable: true,  sym: 'P', css: 'plains',   encounter: true,  encRate: 0.10 },
+    'T': { name: 'Town',         passable: true,  sym: 'T', css: 'town',     encounter: false, isTown: true },
+    'D': { name: 'Dungeon',      passable: true,  sym: 'D', css: 'dungeon',  encounter: false, isDungeon: true },
+    'R': { name: 'Ancient Ruins',passable: true,  sym: 'R', css: 'ruins',    encounter: true,  encRate: 0.15, isRuins: true },
+    'X': { name: 'Sacred Shrine',passable: true,  sym: 'X', css: 'shrine',   encounter: false, isShrine: true },
+    's': { name: 'Swamp',        passable: true,  sym: 's', css: 'swamp',    encounter: true,  encRate: 0.20 },
+    'G': { name: 'Glacier',      passable: true,  sym: 'G', css: 'tundra',   encounter: true,  encRate: 0.08 }
   };
 
   /* ----------------------------------------------------------
      WILDERNESS ENCOUNTER TABLE (overworld)
      ---------------------------------------------------------- */
   const WILD_ENCOUNTERS = [
-    // Groups: [enemy id, minCount, maxCount]
-    { group: [['goblin',2,5]], minLevel: 1, maxLevel: 3, terrain: ['grass','plains','road'] },
-    { group: [['orc',2,4]], minLevel: 1, maxLevel: 4, terrain: ['grass','plains','road'] },
-    { group: [['wolf',2,5]], minLevel: 1, maxLevel: 3, terrain: ['forest'] },
-    { group: [['bandit',2,4]], minLevel: 1, maxLevel: 5, terrain: ['road','grass'] },
+    { group: [['goblin',2,5]],            minLevel: 1, maxLevel: 3,  terrain: ['grass','plains','road'] },
+    { group: [['orc',2,4]],               minLevel: 1, maxLevel: 4,  terrain: ['grass','plains','road'] },
+    { group: [['wolf',2,5]],              minLevel: 1, maxLevel: 3,  terrain: ['forest'] },
+    { group: [['shadow_wolf',1,3]],        minLevel: 2, maxLevel: 6,  terrain: ['forest','swamp'] },
+    { group: [['bandit',2,4]],            minLevel: 1, maxLevel: 5,  terrain: ['road','grass'] },
     { group: [['gnoll',2,3],['goblin',1,2]], minLevel: 3, maxLevel: 6, terrain: ['forest','plains'] },
     { group: [['orc',2,3],['goblin',2,3]], minLevel: 2, maxLevel: 5, terrain: ['grass','road'] },
-    { group: [['troll',1,2]], minLevel: 4, maxLevel: 8, terrain: ['forest','mountain'] },
-    { group: [['ogre',1,2]], minLevel: 5, maxLevel: 9, terrain: ['mountain','plains'] },
-    { group: [['skeleton',2,5]], minLevel: 2, maxLevel: 6, terrain: ['grass','plains'] },
-    { group: [['zombie',2,4]], minLevel: 3, maxLevel: 7, terrain: ['forest','plains'] },
-    { group: [['minotaur',1,2]], minLevel: 5, maxLevel: 10, terrain: ['mountain'] },
-    { group: [['dragon',1,1]], minLevel: 8, maxLevel: 15, terrain: ['mountain'] }
+    { group: [['troll',1,2]],             minLevel: 4, maxLevel: 8,  terrain: ['forest','mountain'] },
+    { group: [['ogre',1,2]],              minLevel: 5, maxLevel: 9,  terrain: ['mountain','plains'] },
+    { group: [['skeleton',2,5]],          minLevel: 2, maxLevel: 6,  terrain: ['grass','plains','ruins'] },
+    { group: [['zombie',2,4]],            minLevel: 3, maxLevel: 7,  terrain: ['forest','plains','swamp'] },
+    { group: [['harpy',2,3]],             minLevel: 4, maxLevel: 8,  terrain: ['mountain'] },
+    { group: [['minotaur',1,2]],          minLevel: 5, maxLevel: 10, terrain: ['mountain','ruins'] },
+    { group: [['dark_priest',1,2],['skeleton',2,3]], minLevel: 5, maxLevel: 10, terrain: ['ruins','swamp'] },
+    { group: [['cultist',2,4]],           minLevel: 4, maxLevel: 9,  terrain: ['swamp','ruins'] },
+    { group: [['dragon',1,1]],            minLevel: 8, maxLevel: 15, terrain: ['mountain','tundra'] },
+    { group: [['wyvern',1,2]],            minLevel: 6, maxLevel: 12, terrain: ['mountain','tundra'] }
   ];
 
   /* ----------------------------------------------------------
@@ -52,7 +60,7 @@ const WorldScreen = (function() {
         <div id="map-sidebar">
           <div class="location-info" id="loc-info">
             <div style="color:var(--cyan);font-size:12px;letter-spacing:2px;margin-bottom:6px">LOCATION</div>
-            <div id="loc-name" style="color:var(--yellow)">Scandor</div>
+            <div id="loc-name" style="color:var(--yellow)">Valdoria</div>
             <div id="loc-desc" style="color:var(--grey);font-size:12px;margin-top:4px"></div>
           </div>
           <div class="compass">
@@ -68,6 +76,8 @@ const WorldScreen = (function() {
               <div style="margin-top:6px">
                 <span style="color:var(--yellow)">T</span> = Town<br>
                 <span style="color:var(--red)">D</span> = Dungeon<br>
+                <span style="color:var(--cyan)">X</span> = Shrine<br>
+                <span style="color:var(--orange)">R</span> = Ruins<br>
                 <span style="color:var(--fg)">@</span> = Party
               </div>
             </div>
@@ -87,18 +97,18 @@ const WorldScreen = (function() {
   function buildQuestStatus(s) {
     const q = s.questFlags;
     const items = [
-      { flag: 'giantEyeFound',     name: "Giant's Eye" },
-      { flag: 'dwarvenRuneFound',  name: 'Dwarven Rune' },
-      { flag: 'lightCrystalFound', name: 'Light Crystal' },
-      { flag: 'darkShardFound',    name: 'Dark Shard' }
+      { flag: 'sealOfFlameFound', name: 'Seal of Flame' },
+      { flag: 'sealOfStoneFound', name: 'Seal of Stone' },
+      { flag: 'sealOfWaveFound',  name: 'Seal of Wave'  },
+      { flag: 'sealOfLightFound', name: 'Seal of Light' }
     ];
     const found = items.filter(i => q[i.flag]).length;
     if (found === 0) return '';
     return `
       <div class="location-info">
-        <div style="color:var(--cyan);font-size:12px;margin-bottom:4px">RELICS (${found}/4)</div>
+        <div style="color:var(--cyan);font-size:12px;margin-bottom:4px">SEALS (${found}/4)</div>
         ${items.map(i => q[i.flag]
-          ? `<div style="color:var(--yellow);font-size:12px">✓ ${i.name}</div>`
+          ? `<div style="color:var(--yellow);font-size:12px">&#10003; ${i.name}</div>`
           : `<div style="color:var(--grey);font-size:12px">- ${i.name}</div>`
         ).join('')}
       </div>
@@ -106,21 +116,7 @@ const WorldScreen = (function() {
   }
 
   /* ----------------------------------------------------------
-     CANVAS TILE PALETTE
-     ---------------------------------------------------------- */
-  const TILE_DRAW = {
-    '~': { bg: '#000a22', fg: '#003399', sym: '≈' },
-    '.': { bg: '#0d3a0d', fg: '#1a7a1a', sym: '·' },
-    'f': { bg: '#002200', fg: '#005500', sym: '♣' },
-    '^': { bg: '#2a2a2a', fg: '#888888', sym: '^' },
-    '=': { bg: '#1a1008', fg: '#886633', sym: '=' },
-    'P': { bg: '#0f2a0f', fg: '#2d8c2d', sym: ':' },
-    'T': { bg: '#221100', fg: '#ffcc00', sym: 'T' },
-    'D': { bg: '#1a0000', fg: '#ff3333', sym: 'D' }
-  };
-
-  /* ----------------------------------------------------------
-     DRAW MAP — Canvas tile renderer
+     DRAW MAP — Canvas tile renderer (uses Sprites module when available)
      ---------------------------------------------------------- */
   function drawMap() {
     const s = Game.getState();
@@ -132,8 +128,8 @@ const WorldScreen = (function() {
     const px = s.worldPos.x;
     const py = s.worldPos.y;
 
-    const TW = 24, TH = 24;          // tile dimensions in pixels
-    const VIEW_W = 25, VIEW_H = 16;  // viewport in tiles
+    const TW = 24, TH = 24;
+    const VIEW_W = 25, VIEW_H = 16;
     const mapH = mapData.length;
     const mapW = (mapData[0] || '').length;
 
@@ -141,51 +137,39 @@ const WorldScreen = (function() {
     const startY = Math.max(0, Math.min(py - Math.floor(VIEW_H / 2), mapH - VIEW_H));
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = '14px "Courier New", monospace';
+
+    const useSprites = typeof Sprites !== 'undefined';
 
     for (let row = startY; row < Math.min(startY + VIEW_H, mapH); row++) {
       const rowStr = mapData[row] || '';
       for (let col = startX; col < Math.min(startX + VIEW_W, rowStr.length); col++) {
         const sx = (col - startX) * TW;
         const sy = (row - startY) * TH;
-        const cx = sx + TW / 2;
-        const cy = sy + TH / 2;
 
-        if (col === px && row === py) {
-          // Party marker — green glow
-          ctx.fillStyle = '#002800';
-          ctx.fillRect(sx, sy, TW, TH);
-          ctx.shadowColor = '#ffcc00';
-          ctx.shadowBlur = 10;
-          ctx.fillStyle = '#33ff33';
-          ctx.font = 'bold 16px "Courier New", monospace';
-          ctx.fillText('@', cx, cy);
-          ctx.shadowBlur = 0;
-          ctx.font = '14px "Courier New", monospace';
-        } else {
-          const ch = rowStr[col] || ' ';
-          const td = TILE_DRAW[ch] || TILE_DRAW['.'];
+        const ch = rowStr[col] || '~';
 
-          // Background fill
-          ctx.fillStyle = td.bg;
-          ctx.fillRect(sx, sy, TW, TH);
-
-          // Town / dungeon get a subtle border highlight
-          if (ch === 'T') {
-            ctx.strokeStyle = '#443300';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(sx + 0.5, sy + 0.5, TW - 1, TH - 1);
-          } else if (ch === 'D') {
-            ctx.strokeStyle = '#330000';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(sx + 0.5, sy + 0.5, TW - 1, TH - 1);
+        if (useSprites) {
+          Sprites.drawTile(ctx, ch, sx, sy);
+          if (col === px && row === py) {
+            Sprites.drawPartyMarker(ctx, sx, sy);
           }
-
-          // Symbol text
-          ctx.fillStyle = td.fg;
-          ctx.fillText(td.sym, cx, cy);
+        } else {
+          // Minimal fallback
+          const FALLBACK = {
+            '~': '#000a22', '.': '#0d3a0d', 'f': '#002200',
+            '^': '#2a2a2a', '=': '#1a1008', 'P': '#0f2a0f',
+            'T': '#221100', 'D': '#1a0000', 'R': '#1a0e00',
+            'X': '#001a22', 's': '#041a04', 'G': '#1a1a2a'
+          };
+          ctx.fillStyle = FALLBACK[ch] || '#0d3a0d';
+          ctx.fillRect(sx, sy, TW, TH);
+          if (col === px && row === py) {
+            ctx.fillStyle = '#33ff33';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = 'bold 16px monospace';
+            ctx.fillText('@', sx + TW / 2, sy + TH / 2);
+          }
         }
       }
     }
@@ -200,7 +184,7 @@ const WorldScreen = (function() {
       ctx.beginPath(); ctx.moveTo(0, r * TH); ctx.lineTo(VIEW_W * TW, r * TH); ctx.stroke();
     }
 
-    // Vignette border darkening
+    // Vignette
     const vg = ctx.createRadialGradient(300, 192, 140, 300, 192, 310);
     vg.addColorStop(0, 'rgba(0,0,0,0)');
     vg.addColorStop(1, 'rgba(0,0,0,0.4)');
@@ -221,16 +205,15 @@ const WorldScreen = (function() {
     const tileChar = getTileAt(x, y);
     const tile = TILES[tileChar] || TILES['.'];
 
-    // Check for town/dungeon at position
     const town = DATA.towns.find(t => t.x === x && t.y === y);
     const dungeon = DATA.dungeons.find(d => d.x === x && d.y === y);
 
     if (town) {
       nameEl.textContent = town.name;
-      descEl.textContent = town.desc + '\n[Enter to enter town]';
+      descEl.textContent = (town.desc || '') + ' [Enter to enter town]';
     } else if (dungeon) {
       nameEl.textContent = dungeon.name;
-      descEl.textContent = dungeon.desc + '\n[Enter to enter dungeon]';
+      descEl.textContent = (dungeon.desc || '') + ' [Enter to enter dungeon]';
     } else {
       nameEl.textContent = tile.name;
       descEl.textContent = `Position: (${x}, ${y})`;
@@ -259,22 +242,23 @@ const WorldScreen = (function() {
 
     s.worldPos.x = newX;
     s.worldPos.y = newY;
-
-    // Mark visited
     s.visitedTiles[`${newX},${newY}`] = true;
 
     drawMap();
     updateLocationInfo();
 
-    // Check for random encounter
+    // Check for Gloomhaven-style exploration event first
+    if (typeof Events !== 'undefined' && tile.encounter) {
+      if (Events.checkStep(tile.css)) return;
+    }
+
+    // Check for random combat encounter
     if (tile.encounter && checkEncounter(tile, s)) {
       triggerWildEncounter(tile.css);
-      return;
     }
   }
 
   function checkEncounter(tile, s) {
-    // Camouflage spell reduces encounter rate
     const rate = tile.encRate || 0.12;
     return Math.random() < rate;
   }
@@ -283,7 +267,6 @@ const WorldScreen = (function() {
     const s = Game.getState();
     const partyLevel = Math.max(...s.party.filter(c => c.alive).map(c => c.level));
 
-    // Filter encounters by terrain and level
     const valid = WILD_ENCOUNTERS.filter(e =>
       e.terrain.includes(terrain) &&
       e.minLevel <= partyLevel + 3
@@ -325,10 +308,10 @@ const WorldScreen = (function() {
 
     return {
       ...template,
-      uid:    Math.random().toString(36).slice(2),
-      hpMax:  hp,
-      hpCur:  hp,
-      status: [],
+      uid:       Math.random().toString(36).slice(2),
+      hpMax:     hp,
+      hpCur:     hp,
+      status:    [],
       scaledStr: Math.floor(template.str * (1 + Math.max(0, partyLevel - 3) * 0.1))
     };
   }
@@ -349,23 +332,41 @@ const WorldScreen = (function() {
 
     const dungeon = DATA.dungeons.find(d => d.x === x && d.y === y);
     if (dungeon) {
-      // Check if dungeon requires quest items
+      // Malachar's Citadel requires all four Seals
       if (dungeon.requiresItems && dungeon.requiresItems.length > 0) {
         const q = s.questFlags;
-        const hasMet = q.giantEyeFound && q.dwarvenRuneFound &&
-                       q.lightCrystalFound && q.darkShardFound;
-        if (!hasMet) {
-          Game.addMessage('The gates are sealed. You need the four sacred relics.', 'msg-info');
+        const hasAll = q.sealOfFlameFound && q.sealOfStoneFound &&
+                       q.sealOfWaveFound  && q.sealOfLightFound;
+        if (!hasAll) {
+          Game.addMessage('The gates are sealed by shadow. You need the four Seals of Power.', 'msg-info');
+          return;
+        }
+        if (!q.malacharConfronted) {
+          q.malacharConfronted = true;
+          Game.showScreen('malachar');
           return;
         }
       }
+
       Game.addMessage(`Entering ${dungeon.name}...`, 'msg-info');
       if (!s.dungeonProgress[dungeon.id]) {
         s.dungeonProgress[dungeon.id] = { floorsVisited: [], chestsTaken: [], enemiesDefeated: [] };
       }
       s.currentDungeon = dungeon.id;
-      s.dungeonPos = { x: 1, y: 7, floor: 1 };
+      s.dungeonPos = { x: 2, y: 1, floor: 1 };
       Game.showScreen('dungeon', { dungeonId: dungeon.id, floor: 1 });
+      return;
+    }
+
+    // Sacred shrines restore HP/MP
+    const tileChar = getTileAt(x, y);
+    if (tileChar === 'X') {
+      const alive = Game.getAliveParty();
+      alive.forEach(ch => {
+        ch.hp.current = ch.hp.max;
+        ch.mp.current = ch.mp.max;
+      });
+      Game.addMessage('The sacred shrine restores your party to full health!', 'msg-info');
       return;
     }
 

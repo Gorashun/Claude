@@ -1,5 +1,5 @@
 /* ============================================================
-   PHANTASIE III - TURN-BASED COMBAT ENGINE
+   VALDORIA: THE DARK ASCENSION - TURN-BASED COMBAT ENGINE
    Combat flow, actions, spells, wounds, enemy AI
    ============================================================ */
 
@@ -61,7 +61,7 @@ const CombatScreen = (function() {
     gnoll:    [' .-. ', '(#.#)', ' ||| '],
     ogre:     [' [_] ', '(O O)', ' /|\\ '],
     minotaur: [' ) ( ', '(> <)', ' | | '],
-    nikademus:['*****', '(#X#)', '*****']
+    malachar:['*X*X*','(#@#)','*X*X*']
   };
 
   function getPortrait(id, isEnemy) {
@@ -981,7 +981,7 @@ const CombatScreen = (function() {
 
       // Check if final boss
       if (cs.isFinalBoss) {
-        Game.getState().questFlags.nikademusDefeated = true;
+        Game.getState().questFlags.malacharDefeated = true;
         Game.save();
         Game.showScreen('victory');
         return true;
