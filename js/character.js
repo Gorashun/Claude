@@ -1,5 +1,5 @@
 /* ============================================================
-   PHANTASIE III - CHARACTER SYSTEM
+   VALDORIA: THE DARK ASCENSION — CHARACTER SYSTEM
    Creation, stat rolling, leveling, character sheet
    ============================================================ */
 
@@ -14,37 +14,38 @@ const CharScreen = (function() {
   function createCharacter(name, raceId, classId) {
     const race = DATA.races.find(r => r.id === raceId);
     const cls  = DATA.classes.find(c => c.id === classId);
-    const socialClass = rollSocialClass();
 
     // Roll base stats 3d6 clamped 3-18, then apply racial mods
     const baseStats = rollStats();
     const stats = {
-      str: clamp(baseStats.str + race.statBonus.str, 3, 22),
-      dex: clamp(baseStats.dex + race.statBonus.dex, 3, 22),
-      con: clamp(baseStats.con + race.statBonus.con, 3, 22),
-      int: clamp(baseStats.int + race.statBonus.int, 3, 22),
-      cha: clamp(baseStats.cha + race.statBonus.cha, 3, 22)
+      str: clamp(baseStats.str + (race.str || 0), 3, 22),
+      dex: clamp(baseStats.dex + (race.dex || 0), 3, 22),
+      con: clamp(baseStats.con + (race.con || 0), 3, 22),
+      int: clamp(baseStats.int + (race.int || 0), 3, 22),
+      wis: clamp(baseStats.wis + (race.wis || 0), 3, 22)
     };
 
-    const hpMax = Math.max(1, roll(1, cls.hpDie) + statMod(stats.con));
-    const mpMax = cls.mpDie > 0 ? Math.max(0, roll(1, cls.mpDie) + statMod(stats.int)) : 0;
+    const hpMax = Math.max(1, roll(1, cls.hdice) + statMod(stats.con));
+    const mpMax = cls.mpBase > 0 ? Math.max(0, cls.mpBase + statMod(stats.int) * 2) : 0;
 
-    // Starting spells from class definition
-    const startSpells = [...cls.startSpells];
+    // Starting spells by class (level 1 learnable spells)
+    const startSpells = getStartingSpells(classId);
 
     // Starting equipment (very basic)
     const startWeapon = getStartWeapon(classId);
     const startArmor  = getStartArmor(classId);
 
+    // Starting gold (50–150)
+    const startGold = 50 + Math.floor(Math.random() * 101);
+
     return {
-      id:          charIdCounter++,
+      id:       charIdCounter++,
       name,
-      race:        raceId,
-      class:       classId,
-      socialClass: socialClass.id,
-      level:       1,
-      xp:          0,
-      xpToNext:    xpForLevel(2),
+      race:     raceId,
+      class:    classId,
+      level:    1,
+      xp:       0,
+      xpToNext: xpForLevel(2),
       stats,
       hp:   { current: hpMax, max: hpMax },
       mp:   { current: mpMax, max: mpMax },
@@ -53,8 +54,8 @@ const CharScreen = (function() {
         armor:  startArmor,
         shield: 'none'
       },
-      spells:   startSpells,
-      wounds:   {
+      spells: startSpells,
+      wounds: {
         head:     'ok',
         torso:    'ok',
         leftArm:  'ok',
@@ -64,7 +65,7 @@ const CharScreen = (function() {
       },
       rank:  'front',
       alive: true,
-      gold:  socialClass.goldPerLevel
+      gold:  startGold
     };
   }
 
@@ -74,16 +75,15 @@ const CharScreen = (function() {
       dex: roll(3, 6),
       con: roll(3, 6),
       int: roll(3, 6),
-      cha: roll(3, 6)
+      wis: roll(3, 6)
     };
   }
 
-  function rollSocialClass() {
-    const r = Math.random();
-    if (r < 0.45) return DATA.socialClasses[0]; // Peasant 45%
-    if (r < 0.75) return DATA.socialClasses[1]; // Laborer 30%
-    if (r < 0.92) return DATA.socialClasses[2]; // Craftsman 17%
-    return DATA.socialClasses[3];               // Noble 8%
+  function getStartingSpells(classId) {
+    if (classId === 'fighter') return [];
+    // Return first spell learnable by this class
+    const classSpells = DATA.spells.filter(sp => sp.cls.includes(classId));
+    return classSpells.length > 0 ? [classSpells[0].id] : [];
   }
 
   function statMod(val) {
@@ -134,15 +134,9 @@ const CharScreen = (function() {
   }
 
   function levelUpCost(char) {
-    const cls     = DATA.classes.find(c => c.id === char.class);
-    const social  = DATA.socialClasses.find(s => s.id === char.socialClass);
-    const race    = DATA.races.find(r => r.id === char.race);
-    const baseCost = cls.trainCost * char.level;
-    // Beast races cost more
-    const raceMult = race.beast ? 3 : 1;
-    // High charisma reduces cost
-    const chaMult  = Math.max(0.5, 1.0 - (char.stats.cha - 10) * 0.03);
-    return Math.floor(baseCost * raceMult * chaMult);
+    // Base cost: 100 gold × level, modified by WIS
+    const wisDiscount = Math.max(0.5, 1.0 - (char.stats.wis - 10) * 0.03);
+    return Math.floor(100 * char.level * wisDiscount);
   }
 
   function applyLevelUp(char, chosenImprovements) {
@@ -153,8 +147,8 @@ const CharScreen = (function() {
     const cls = DATA.classes.find(c => c.id === char.class);
 
     // Base HP/MP increase each level
-    const hpGain = Math.max(1, roll(1, cls.hpDie) + statMod(char.stats.con));
-    const mpGain = cls.mpDie > 0 ? Math.max(0, roll(1, cls.mpDie) + statMod(char.stats.int)) : 0;
+    const hpGain = Math.max(1, roll(1, cls.hdice) + statMod(char.stats.con));
+    const mpGain = cls.mpBase > 0 ? Math.max(0, roll(1, 6) + statMod(char.stats.int)) : 0;
     char.hp.max += hpGain;
     char.hp.current += hpGain;
     char.mp.max += mpGain;
@@ -163,9 +157,8 @@ const CharScreen = (function() {
     // Apply chosen training improvements
     chosenImprovements.forEach(opt => applyTrainingOption(char, opt));
 
-    // Gold per level from social class
-    const social = DATA.socialClasses.find(s => s.id === char.socialClass);
-    char.gold += social.goldPerLevel;
+    // Small gold bonus on level up
+    char.gold += 25 * char.level;
 
     return { hpGain, mpGain };
   }
@@ -178,18 +171,16 @@ const CharScreen = (function() {
       dex_up: () => char.stats.dex++,
       con_up: () => char.stats.con++,
       int_up: () => char.stats.int++,
-      cha_up: () => char.stats.cha++,
-      hit_up: () => { /* tracked as hitBonus in combat */ char.hitBonus = (char.hitBonus || 0) + 1; },
-      ac_up:  () => { char.acBonus = (char.acBonus || 0) + 1; }
+      wis_up: () => char.stats.wis++,
+      hit_up: () => { char.hitBonus = (char.hitBonus || 0) + 1; },
+      ac_up:  () => { char.acBonus  = (char.acBonus  || 0) + 1; }
     };
     if (actions[optId]) actions[optId]();
   }
 
   function getAvailableSpells(char) {
-    const cls = DATA.classes.find(c => c.id === char.class);
     return DATA.spells.filter(sp =>
-      cls.classSpells.includes(sp.id) &&
-      sp.level <= char.level &&
+      sp.cls.includes(char.class) &&
       !char.spells.includes(sp.id)
     );
   }
@@ -198,11 +189,10 @@ const CharScreen = (function() {
      NEW GAME - PARTY CREATION FLOW
      ---------------------------------------------------------- */
   let creationState = {
-    mode: 'intro',   // intro -> selectRace -> selectClass -> enterName -> rollStats -> confirm
+    mode: 'intro',   // intro -> partyBuild -> selectRace -> selectClass -> enterName -> rollStats
     raceId: null,
     classId: null,
     name: '',
-    rolledStats: null,
     tempChar: null,
     partyBeingBuilt: []
   };
@@ -210,7 +200,7 @@ const CharScreen = (function() {
   function renderNewGame(main) {
     creationState = {
       mode: 'intro',
-      raceId: null, classId: null, name: '', rolledStats: null,
+      raceId: null, classId: null, name: '',
       tempChar: null, partyBeingBuilt: []
     };
     renderCreationStep(main);
@@ -223,12 +213,12 @@ const CharScreen = (function() {
 
   function renderCreationStep(main) {
     switch (creationState.mode) {
-      case 'intro':      renderIntro(main);       break;
-      case 'selectRace': renderRaceSelect(main);  break;
-      case 'selectClass':renderClassSelect(main); break;
-      case 'enterName':  renderNameEntry(main);   break;
-      case 'rollStats':  renderStatRoll(main);    break;
-      case 'partyBuild': renderPartyBuild(main);  break;
+      case 'intro':       renderIntro(main);       break;
+      case 'selectRace':  renderRaceSelect(main);  break;
+      case 'selectClass': renderClassSelect(main); break;
+      case 'enterName':   renderNameEntry(main);   break;
+      case 'rollStats':   renderStatRoll(main);    break;
+      case 'partyBuild':  renderPartyBuild(main);  break;
     }
   }
 
@@ -273,7 +263,7 @@ const CharScreen = (function() {
               <th>Level</th><th>HP</th><th>STR</th><th>DEX</th><th>INT</th>
             </tr></thead>
             <tbody>
-              ${party.map((ch, i) => `
+              ${party.map((ch) => `
                 <tr>
                   <td class="text-yellow">${ch.name}</td>
                   <td>${DATA.races.find(r=>r.id===ch.race).name}</td>
@@ -307,8 +297,8 @@ const CharScreen = (function() {
     if (btnStart) btnStart.onclick = () => {
       const s = Game.getState();
       s.party = creationState.partyBeingBuilt;
-      s.partyGold = 100;  // Starting gold
-      Game.addMessage('Your party sets out from Pendragon!', 'msg-info');
+      s.partyGold = 100;
+      Game.addMessage('Your party sets out from Ironhold!', 'msg-info');
       Game.showScreen('overworld');
     };
 
@@ -329,7 +319,6 @@ const CharScreen = (function() {
                 <div class="select-option ${creationState.raceId === r.id ? 'selected' : ''}"
                      data-id="${r.id}">
                   <span class="text-yellow">${r.name}</span>
-                  ${r.beast ? '<span class="text-red"> [Beast]</span>' : ''}
                 </div>
               `).join('')}
             </div>
@@ -370,29 +359,28 @@ const CharScreen = (function() {
   function renderRaceInfo(raceId) {
     const r = DATA.races.find(x => x.id === raceId);
     if (!r) return '';
-    const bonuses = Object.entries(r.statBonus)
-      .filter(([,v]) => v !== 0)
-      .map(([k,v]) => `${k.toUpperCase()}: ${v > 0 ? '+' : ''}${v}`)
+    const statFields = ['str','int','dex','con','wis','lck'];
+    const bonuses = statFields
+      .filter(k => r[k] && r[k] !== 0)
+      .map(k => `${k.toUpperCase()}: ${r[k] > 0 ? '+' : ''}${r[k]}`)
       .join(', ') || 'None';
     return `
       <p class="text-yellow">${r.name}</p>
       <p class="text-grey" style="margin:6px 0">${r.desc}</p>
       <p>Stat Bonuses: <span class="text-cyan">${bonuses}</span></p>
-      <p>Classes: <span class="text-white">${r.availableClasses.map(c=>c[0].toUpperCase()+c.slice(1)).join(', ')}</span></p>
-      ${r.beast ? '<p class="text-red">Beast race: higher training costs.</p>' : ''}
+      <p class="text-grey" style="font-size:11px;margin-top:6px">All classes available to all races.</p>
     `;
   }
 
   function renderClassSelect(main) {
     const race = DATA.races.find(r => r.id === creationState.raceId);
-    const validClasses = DATA.classes.filter(c => race.availableClasses.includes(c.id));
 
     main.innerHTML = `
       <div style="padding:12px">
         <div class="panel-title">SELECT CLASS — ${race.name}</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div class="class-list">
-            ${validClasses.map(c => `
+            ${DATA.classes.map(c => `
               <div class="select-option ${creationState.classId === c.id ? 'selected' : ''}"
                    data-id="${c.id}">
                 <span class="text-yellow">${c.name}</span>
@@ -436,14 +424,16 @@ const CharScreen = (function() {
   function renderClassInfo(classId) {
     const c = DATA.classes.find(x => x.id === classId);
     if (!c) return '';
+    const classSpells = DATA.spells.filter(sp => sp.cls.includes(classId));
+    const firstSpell = classSpells.length > 0 ? classSpells[0].name : 'None';
     return `
       <p class="text-yellow">${c.name}</p>
-      <p class="text-grey" style="margin:6px 0">${c.desc}</p>
-      <p>HP Die: <span class="text-white">d${c.hpDie}</span> &nbsp;
-         MP Die: <span class="text-cyan">${c.mpDie > 0 ? 'd'+c.mpDie : 'None'}</span></p>
-      <p>Starting Spells: <span class="text-cyan">${c.startSpells.length > 0
-        ? c.startSpells.map(s => { const sp = DATA.spells.find(x=>x.id===s); return sp ? sp.name : s; }).join(', ')
-        : 'None'}</span></p>
+      <p>HP Die: <span class="text-white">d${c.hdice}</span> &nbsp;
+         Magic: <span class="text-cyan">${c.mpBase > 0 ? 'Yes ('+c.spellsPerLevel+'/level)' : 'None'}</span></p>
+      <p style="margin-top:6px">Starting Spell: <span class="text-cyan">${firstSpell}</span></p>
+      <p style="margin-top:6px;font-size:11px" class="text-grey">
+        Gains: STR+${c.strGain} INT+${c.intGain} DEX+${c.dexGain}/level
+      </p>
     `;
   }
 
@@ -474,7 +464,6 @@ const CharScreen = (function() {
       const name = document.getElementById('char-name').value.trim();
       if (!name) { alert('Please enter a name.'); return; }
       creationState.name = name;
-      creationState.rolledStats = rollStats();
       creationState.tempChar = createCharacter(creationState.name, creationState.raceId, creationState.classId);
       creationState.mode = 'rollStats';
       renderCreationStep(main);
@@ -488,6 +477,7 @@ const CharScreen = (function() {
 
   function renderStatRoll(main) {
     const ch = creationState.tempChar;
+    const statLabels = { str:'STR', dex:'DEX', con:'CON', int:'INT', wis:'WIS' };
     main.innerHTML = `
       <div style="padding:12px;max-width:600px;margin:0 auto">
         <div class="panel-title">CHARACTER STATS — ${ch.name}</div>
@@ -495,13 +485,12 @@ const CharScreen = (function() {
           <div>
             <p class="text-grey" style="margin-bottom:8px">
               ${DATA.races.find(r=>r.id===ch.race).name}
-              ${DATA.classes.find(c=>c.id===ch.class).name} &nbsp;|&nbsp;
-              ${DATA.socialClasses.find(s=>s.id===ch.socialClass).name}
+              ${DATA.classes.find(c=>c.id===ch.class).name}
             </p>
             <div class="stat-grid">
-              ${['str','dex','con','int','cha'].map(stat => `
+              ${Object.entries(statLabels).map(([stat, label]) => `
                 <div class="stat-row">
-                  <span class="stat-name">${stat.toUpperCase()}</span>
+                  <span class="stat-name">${label}</span>
                   <span class="stat-val">${ch.stats[stat]}</span>
                 </div>
               `).join('')}
@@ -525,6 +514,7 @@ const CharScreen = (function() {
             ${ch.spells.length > 0 ? `<p class="text-cyan" style="margin-top:8px">Spells: ${ch.spells.map(s => {
               const sp = DATA.spells.find(x=>x.id===s); return sp ? sp.name : s;
             }).join(', ')}</p>` : ''}
+            <p class="text-yellow" style="margin-top:8px">Gold: ${ch.gold}</p>
           </div>
         </div>
         <div style="display:flex;gap:10px">
@@ -639,7 +629,7 @@ const CharScreen = (function() {
         <div class="char-sheet">
           <div>
             <p class="text-grey" style="font-size:12px;margin-bottom:6px">ATTRIBUTES</p>
-            ${['str','dex','con','int','cha'].map(s => `
+            ${['str','dex','con','int','wis'].map(s => `
               <div class="char-detail-row">
                 <span class="char-detail-label">${s.toUpperCase()}</span>
                 <span class="char-detail-val">${ch.stats[s]} (${statMod(ch.stats[s]) >= 0 ? '+' : ''}${statMod(ch.stats[s])})</span>
@@ -688,7 +678,7 @@ const CharScreen = (function() {
                 <span class="wound-${status}">${loc}: ${status}</span>
               `).join('')}
             </div>
-            ${ch.spells.length > 0 ? `
+            ${ch.spells && ch.spells.length > 0 ? `
             <hr class="sep">
             <p class="text-grey" style="font-size:12px;margin-bottom:6px">SPELLS</p>
             <div class="spell-grid">
@@ -714,7 +704,7 @@ const CharScreen = (function() {
      LEVEL UP SCREEN
      ---------------------------------------------------------- */
   function renderLevelUp(main, data) {
-    const { char, idx, townId, costPaid } = data;
+    const { char, idx, townId } = data;
     const MAX_PICKS = 3;
     let picks = [];
 
@@ -722,10 +712,10 @@ const CharScreen = (function() {
     const learnableSpells = getAvailableSpells(char);
 
     // Build training options list
+    const cls = DATA.classes.find(c => c.id === char.class);
     let options = [...DATA.trainingOptions];
     // Remove MP option for fighters (no magic)
-    const cls = DATA.classes.find(c => c.id === char.class);
-    if (cls.mpDie === 0) options = options.filter(o => o.id !== 'mp_up');
+    if (cls.mpBase === 0) options = options.filter(o => o.id !== 'mp_up');
 
     // Add learnable spells as options
     learnableSpells.forEach(sp => {
@@ -735,7 +725,7 @@ const CharScreen = (function() {
     function updateUI() {
       const confirmBtn = document.getElementById('btn-levelup-confirm');
       if (confirmBtn) confirmBtn.disabled = picks.length < Math.min(MAX_PICKS, options.length);
-      document.querySelectorAll('.levelup-option').forEach((el, i) => {
+      document.querySelectorAll('.levelup-option').forEach((el) => {
         el.classList.toggle('selected', picks.includes(el.dataset.id));
       });
     }
