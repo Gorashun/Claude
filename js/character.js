@@ -237,13 +237,13 @@ const CharScreen = (function() {
       <div style="padding:20px;max-width:600px;margin:0 auto">
         <div class="panel-title">THE QUEST BEGINS</div>
         <div class="panel" style="margin:0;line-height:1.8;color:var(--white)">
-          <p>The dark lord <span class="text-red">Nikademus</span> marches upon the land of
-          <span class="text-yellow">Scandor</span>. His armies of darkness spread from his fortress,
-          crushing all hope.</p>
+          <p>The Shadow King <span class="text-red">Lord Malachar</span> has cast his dark blight upon the realm of
+          <span class="text-yellow">Valdoria</span>. His shadow armies spread from the southern Citadel,
+          crushing all who resist.</p>
           <br>
           <p>You must assemble a party of brave adventurers to challenge his power. Seek the four
-          sacred relics scattered across the land. With them, you may breach his castle and end his
-          reign — or perhaps join him...</p>
+          Seals of Power scattered across the land — Flame, Stone, Wave, and Light. With them, you may
+          breach his Citadel and end his reign — or perhaps embrace the shadow...</p>
           <br>
           <p class="text-cyan">You may create up to 6 party members. You need at least 1 to begin.</p>
         </div>
